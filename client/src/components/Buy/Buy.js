@@ -29,11 +29,11 @@ export const Buy = () => {
   const { address, chainId, isConnected } = useWeb3ModalAccount() ;
   const { walletProvider } = useWeb3ModalProvider();
 
-  const [record, setRecord] = useState([]);
+  const [record, setRecord] = useState([]) ;
 
   const [totalUsdt, setTotalUsdt] = useState();
   const [totalToken, setTotalToken] = useState();
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1) ;
 
   const mainnet = [
     {
