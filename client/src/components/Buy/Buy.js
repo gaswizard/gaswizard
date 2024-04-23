@@ -32,7 +32,7 @@ export const Buy = () => {
   const [record, setRecord] = useState([]) ;
 
   const [totalUsdt, setTotalUsdt] = useState();
-  const [totalToken, setTotalToken] = useState();
+  const [totalToken, setTotalToken] = useState() ;
   const [currentPage, setCurrentPage] = useState(1) ;
 
   const mainnet = [
