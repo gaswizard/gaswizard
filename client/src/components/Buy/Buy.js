@@ -20,9 +20,9 @@ import {
   parseEther,
 } from "ethers";
 
-import $ from "jquery";
+import $ from "jquery" ;
 
-import { Footer } from "../widgets/Footer";
+import { Footer } from "../widgets/Footer" ;
 import { getTransaction } from "../services/transaction";
 export const Buy = () => {
   const projectId = "000a1b24652483ad57b194801f5591ac";
