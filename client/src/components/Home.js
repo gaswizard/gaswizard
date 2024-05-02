@@ -3,7 +3,8 @@ import { Navbar } from "./widgets/Navbar";
 import { Header } from "./widgets/Header";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-
+import "react-phone-input-2/lib/style.css";
+import PhoneInput from "react-phone-input-2";
 import {
   useWeb3ModalProvider,
   useWeb3ModalAccount,
@@ -19,6 +20,7 @@ import {
   parseEther,
   toBigInt,
 } from "ethers";
+import { registerUser } from "./services/user";
 import { metaRequestInsert, getTotalUsdt } from "./services/transaction";
 import { toast } from "react-toastify";
 
@@ -30,6 +32,14 @@ import {
   EthRpcUrl,
   tokenAddress,
   tokenAbi,
+  polygonRpcUrl,
+  polygonChainId,
+  usdtPolygon,
+  usdcPolygon,
+  usdcPolygonabi,
+  usdtPolygonabi,
+  gasWizardPolygonAddress,
+  gasWizardPolygonabi,
 } from "../constant";
 
 import {
@@ -55,6 +65,8 @@ import { checkUser } from "./services/auth/auth";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { Emailpattern } from "./pattern/Pattern";
+import { RegisterUser } from "./auth/RegisterUser";
 
 export const Home = () => {
   const navigate = useNavigate();
@@ -71,16 +83,24 @@ export const Home = () => {
   const [totalUsdt, setTotalUsdt] = useState();
   const [totalSupply, setTotalSupply] = useState();
   const [totalToken, setTotalToken] = useState();
-
+  const [selectedChain, setSelectedChain] = useState(0);
   const [selectedCurrencyUserBalance, setselectedCurrencyUserBalance] =
     useState();
   const [selectChains, setSelectChain] = useState("0");
-  const [userUkcBalance, setuserUkcBalance] = useState(0) ;
+  const [userUkcBalance, setuserUkcBalance] = useState(0);
 
-  const [selectedCurrency, setSelectedCurrency] = useState("") ;
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [name, setName] = useState("");
+  const [mobile_number, setMobile_number] = useState("+91");
+  const [number, setNumber] = useState("");
+  const [email, setEmail] = useState("");
 
-  const [tokenInput, settokenInput] = useState() ;
-  const [ukcInput, setukcInput] = useState() ;
+  const [mobile_numberErr, setMobile_numberErr] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+  const [nameErr, setNameErr] = useState("");
+  const [country_code, setCountry_code] = useState();
+  const [tokenInput, settokenInput] = useState();
+  const [ukcInput, setukcInput] = useState();
 
   const [buyBtnText, setbuyBtnText] = useState("Select Currency");
 
@@ -100,10 +120,19 @@ export const Home = () => {
       // rpcUrl: 'https://cloudflare-eth.com'
       rpcUrl: EthRpcUrl,
     },
+    {
+      chainId: polygonChainId,
+      name: "Polygon",
+      currency: "MATIC",
+      explorerUrl: "https://etherscan.io/",
+      // rpcUrl: 'https://cloudflare-eth.com'
+      rpcUrl: polygonRpcUrl,
+    },
   ];
 
   const bscRpc = bscRpcUrl;
   const EthRpc = EthRpcUrl;
+  const polygonRpc = polygonRpcUrl;
 
   const metadata = {
     name: "gaswizard",
@@ -121,8 +150,21 @@ export const Home = () => {
   });
 
   const selectAddress =
-    selectChains == 0 ? gasWizardAddress : gasWizardEthAddress ;
-  const selectAbi = selectChains == 0 ? gasWizardabi : gasWizardEthabi ;
+    selectChains == 0
+      ? gasWizardAddress
+      : selectChains == 1
+      ? gasWizardEthAddress
+      : selectChains == 2
+      ? gasWizardPolygonAddress
+      : "";
+  const selectAbi =
+    selectChains == 0
+      ? gasWizardabi
+      : selectChains == 1
+      ? gasWizardEthabi
+      : selectChains == 2
+      ? gasWizardPolygonabi
+      : "";
 
   const getSignerOrProvider = async (needSigner = false) => {
     try {
@@ -153,8 +195,10 @@ export const Home = () => {
         let provider;
         if (selectChains == 0) {
           provider = new JsonRpcProvider(bscRpc);
-        } else {
+        } else if (selectChains == 1) {
           provider = new JsonRpcProvider(EthRpc);
+        } else if (selectChains == 2) {
+          provider = new JsonRpcProvider(polygonRpc);
         }
 
         const signer = await getSignerOrProvider(true);
@@ -175,13 +219,19 @@ export const Home = () => {
           } else if (e.target.value == "4") {
             getTokenAddr = usdc;
           }
-        } else {
+        } else if (selectChains == 1) {
           if (e.target.value == "1") {
             getTokenAddr = wbtcErc;
           } else if (e.target.value == "2") {
             getTokenAddr = usdtErc;
           } else if (e.target.value == "3") {
             getTokenAddr = usdcErc;
+          }
+        } else if (selectChains == 2) {
+          if (e.target.value == "1") {
+            getTokenAddr = usdtPolygon;
+          } else if (e.target.value == "2") {
+            getTokenAddr = usdcPolygon;
           }
         }
 
@@ -197,7 +247,7 @@ export const Home = () => {
           let chainnnn;
           if (selectChains == 0) {
             chainnnn = bep20abi;
-          } else {
+          } else if (selectChains == 1) {
             if (e.target.value == 0) {
               chainnnn = erc20abi;
             } else if (e.target.value == 1 || e.target.value == 3) {
@@ -205,13 +255,21 @@ export const Home = () => {
             } else if (e.target.value == 2) {
               chainnnn = usdterc20abi;
             }
+          } else if (selectChains == 2) {
+            if (e.target.value == 0) {
+              chainnnn = erc20abi;
+            } else if (e.target.value == 1) {
+              chainnnn = usdtPolygonabi;
+            } else if (e.target.value == 2) {
+              chainnnn = usdcPolygonabi;
+            }
           }
           let balance;
 
           if (selectChains == 0) {
             const contract = new Contract(getTokenAddr, chainnnn, provider);
             balance = await contract.balanceOf(address);
-          } else {
+          } else if (selectChains == 1) {
             if (e.target.value == 0) {
               const contract = new Contract(getTokenAddr, chainnnn, provider);
               balance = await contract?.balanceOf(address);
@@ -222,6 +280,15 @@ export const Home = () => {
             } else if (e.target.value == 2) {
               const contract = new Contract(getTokenAddr, chainnnn, provider);
               balance = await contract?.balances(address);
+            }
+          } else if (selectChains == 2) {
+            if (e.target.value == 0) {
+              const contract = new Contract(getTokenAddr, chainnnn, provider);
+              balance = await contract?.balanceOf(address);
+            } else if (e.target.value == 1 || e.target.value == 2) {
+              const contract = new Contract(getTokenAddr, chainnnn, provider);
+
+              balance = await contract?.balanceOf(address);
             }
           }
 
@@ -241,8 +308,12 @@ export const Home = () => {
               2
             );
             setselectedCurrencyUserBalance(newUpdateBal);
-          } else {
+          } else if (selectChains == "0") {
             let nbalance = balance / 10 ** 18;
+            nbalance = nbalance?.toFixed(2);
+            setselectedCurrencyUserBalance(nbalance);
+          } else if (selectChains == "2") {
+            let nbalance = balance / 10 ** 6;
             nbalance = nbalance?.toFixed(2);
             setselectedCurrencyUserBalance(nbalance);
           }
@@ -287,8 +358,10 @@ export const Home = () => {
     let provider;
     if (selectChains == 0) {
       provider = new JsonRpcProvider(bscRpc);
-    } else {
+    } else if (selectChains == 1) {
       provider = new JsonRpcProvider(EthRpc);
+    } else if (selectChains == 2) {
+      provider = new JsonRpcProvider(polygonRpc);
     }
 
     const signer = await getSignerOrProvider(true);
@@ -313,7 +386,7 @@ export const Home = () => {
           getTokenAddr = usdc;
         }
         chainnnn = bep20abi;
-      } else {
+      } else if (selectChains == 1) {
         if (selectedCurrency == "1") {
           chainnnn = wbtc20abi;
           getTokenAddr = wbtcErc;
@@ -324,11 +397,19 @@ export const Home = () => {
           getTokenAddr = usdcErc;
           chainnnn = wbtc20abi;
         }
+      } else if (selectChains == 2) {
+        if (selectedCurrency == "1") {
+          chainnnn = usdtPolygon;
+          getTokenAddr = usdtPolygonabi;
+        } else if (selectedCurrency == "2") {
+          chainnnn = usdcPolygon;
+          getTokenAddr = usdcPolygonabi;
+        }
       }
       if (selectChains == 0) {
         const contract = new Contract(getTokenAddr, chainnnn, provider);
         balance = await contract.balanceOf(address);
-      } else {
+      } else if (selectChains == 1) {
         if (selectedCurrency == 0) {
           const contract = new Contract(getTokenAddr, chainnnn, provider);
           balance = await contract?.balanceOf(address);
@@ -347,6 +428,15 @@ export const Home = () => {
       balance = Number(balance);
 
       balance = balance / 10 ** 18;
+      balance = balance.toFixed(4);
+
+      if (selectChains == 2) {
+        if (selectedCurrency == 0) {
+          const contract = new Contract(getTokenAddr, chainnnn, provider);
+          balance = await contract?.balanceOf(address);
+        }
+      }
+      balance = balance / 10 ** 6;
       balance = balance.toFixed(4);
     }
     return balance;
@@ -401,8 +491,8 @@ export const Home = () => {
       : "";
   };
 
-  let formattedTotalToken = formatNumber(totalToken) ;
-  let formattedTotalUsdt = formatNumber(totalUsdt) ;
+  let formattedTotalToken = formatNumber(totalToken);
+  let formattedTotalUsdt = formatNumber(totalUsdt);
   const handleBeforeUnload = (event) => {
     event.preventDefault();
     event.returnValue = "";
@@ -458,10 +548,16 @@ export const Home = () => {
               toast.error("Please change network to binanace smart chain");
               return;
             }
-          } else {
+          } else if (selectChains == 1) {
             if (chainId != ethChainId) {
               toast.dismiss();
               toast.error("Please change network to  Eth chain");
+              return;
+            }
+          } else if (selectChains == 2) {
+            if (chainId != polygonChainId) {
+              toast.dismiss();
+              toast.error("Please change network to  Polygon chain");
               return;
             }
           }
@@ -480,8 +576,15 @@ export const Home = () => {
                   value: valueInWei,
                 }
               );
-            } else {
+            } else if (selectChains == 1) {
               balance = await contract.buyTokenWithETH(
+                process.env.REACT_APP_getfundEthreumAddress,
+                {
+                  value: valueInWei,
+                }
+              );
+            } else if (selectChains == 2) {
+              balance = await contract.buyTokenWithMATIC(
                 process.env.REACT_APP_getfundEthreumAddress,
                 {
                   value: valueInWei,
@@ -516,10 +619,10 @@ export const Home = () => {
             }
           } else {
             toast.error(res.message);
-            localStorage.setItem("chain", selectChains) ;
-            localStorage.setItem("currency", selectedCurrency) ;
-            localStorage.setItem("tokenInput", tokenInput) ;
-            localStorage.setItem("ukcInput", ukcInput) ;
+            localStorage.setItem("chain", selectChains);
+            localStorage.setItem("currency", selectedCurrency);
+            localStorage.setItem("tokenInput", tokenInput);
+            localStorage.setItem("ukcInput", ukcInput);
             setTimeout(() => {
               navigate("/sign-up");
             }, 2000);
@@ -548,7 +651,7 @@ export const Home = () => {
               getTokenAddr = usdc;
             }
             chainnnn = bep20abi;
-          } else {
+          } else if (selectChains == 1) {
             if (chainId != ethChainId) {
               toast.dismiss();
               toast.error("Please change network to  Eth chain");
@@ -570,6 +673,24 @@ export const Home = () => {
               getTokenAddr = usdcErc;
               updatetAmt = updatetAmt * 10 ** 6;
             }
+          } else if (selectChains == 2) {
+            if (chainId != polygonChainId) {
+              toast.dismiss();
+              toast.error("Please change network to  Polygon chain");
+              return;
+            }
+            await getBalance();
+
+            if (selectedCurrency == "1") {
+              getTokenAddr = usdtPolygon;
+              chainnnn = usdterc20abi;
+              updatetAmt = updatetAmt * 10 ** 6;
+            } else if (selectedCurrency == "2") {
+              chainnnn =  usdcPolygonabi;
+
+              getTokenAddr = usdcPolygon;
+              updatetAmt = updatetAmt * 10 ** 6;
+            }
           }
 
           const res = await checkUser({ address });
@@ -577,7 +698,9 @@ export const Home = () => {
             window.addEventListener("beforeunload", handleBeforeUnload);
             const valueInWeii = parseEther(inputamount.toString());
             let balance;
+            console.log(getTokenAddr,"getTokenAddr");
             let contract = new Contract(getTokenAddr, chainnnn, provider);
+           
             if (selectChains == 0) {
               const contract = new Contract(getTokenAddr, chainnnn, provider);
 
@@ -595,7 +718,7 @@ export const Home = () => {
                 await balance.wait();
                 toast.success(" Approved Success");
               }
-            } else {
+            } else if (selectChains == 1) {
               if (selectedCurrency == 1 || selectedCurrency == 3) {
                 const contract = new Contract(getTokenAddr, chainnnn, provider);
 
@@ -645,6 +768,31 @@ export const Home = () => {
 
               // }
               // approve (0x095ea7b3)
+            } else if (selectChains == 2) {
+              console.log("kkk");
+              if (selectedCurrency == 1 || selectedCurrency == 2) {
+                const contract = new Contract(getTokenAddr, chainnnn, provider);
+
+                const checkA = (balance = await contract.allowance(
+                  address,
+                  selectAddress
+                ));
+                console.log(checkA,"checkA",Number(checkA) / 10 ** 6,selectAddress);
+
+                if (Number(checkA) / 10 ** 6 < tokenInput) {
+                  balance = await contract.approve(
+                    selectAddress,
+                    "10000000000000000000000000000000000000000000000000000"
+                  );
+                  await balance.wait();
+                  toast.success(" Approved Success");
+                }
+
+              
+              }
+
+              // }
+              // approve (0x095ea7b3)
             }
 
             contract = new Contract(selectAddress, selectAbi, provider);
@@ -655,7 +803,6 @@ export const Home = () => {
                 selectedCurrency
               );
             } else {
-              console.log("call");
               balance = await contract.buyWithToken(
                 updatetAmt,
                 selectedCurrency
@@ -691,10 +838,10 @@ export const Home = () => {
             }
           } else {
             toast.error(res.message);
-            localStorage.setItem("chain", selectChains) ;
-            localStorage.setItem("currency", selectedCurrency) ;
-            localStorage.setItem("tokenInput", tokenInput) ;
-            localStorage.setItem("ukcInput", ukcInput) ;
+            localStorage.setItem("chain", selectChains);
+            localStorage.setItem("currency", selectedCurrency);
+            localStorage.setItem("tokenInput", tokenInput);
+            localStorage.setItem("ukcInput", ukcInput);
 
             setTimeout(() => {
               navigate("/sign-up");
@@ -715,11 +862,11 @@ export const Home = () => {
         toast.error("Insufficient allowance");
       }
     }
-  } ;
+  };
 
   const busdPrice = async (e) => {
     var busdAmt = e.target.value;
-
+    console.log(busdAmt, "busdAmt");
     settokenInput(busdAmt);
     let res;
     //await checkApproval();
@@ -736,10 +883,14 @@ export const Home = () => {
         otherTokenPrice = ethPrice;
       }
       res = (busdAmt * otherTokenPrice) / tokenPrice;
-      console.log(selectChains, "selectChains");
+
       if (selectChains == "1") {
         if (getVal == "2") {
-          console.log(tokenPrice, "tokenPrice");
+          res = (busdAmt * 1) / tokenPrice;
+        }
+      }
+      if (selectChains == "2") {
+        if (getVal == "1" || getVal == "2") {
           res = (busdAmt * 1) / tokenPrice;
         }
       }
@@ -748,7 +899,7 @@ export const Home = () => {
     res = res.toFixed(2);
 
     setukcInput(res);
-  } ;
+  };
 
   const getTotalSupply = async () => {
     try {
@@ -757,7 +908,7 @@ export const Home = () => {
       let contract = new Contract(tokenAddress, tokenAbi, provider);
 
       let balance = await contract?.totalSupply();
-      console.log(balance, "balance");
+
       balance = Number(balance);
 
       balance = balance / 10 ** 18;
@@ -798,16 +949,20 @@ export const Home = () => {
 
   const getAllPrice = async () => {
     try {
+     
       let provider;
       if (selectChains == 0) {
         provider = new JsonRpcProvider(bscRpc);
-      } else {
+      } else if (selectChains == 1) {
         provider = new JsonRpcProvider(EthRpc);
+      } else if (selectChains == 2) {
+        provider = new JsonRpcProvider(polygonRpc);
       }
 
       const contract = new Contract(selectAddress, selectAbi, provider);
 
       const result = await contract.allPrice();
+      console.log(result, "result111");
 
       let bnbPrice = Number(result[0]); //bnbPRice
 
@@ -849,7 +1004,8 @@ export const Home = () => {
   useEffect(() => {
     if (
       (isConnected && chainId == binanceChainId) ||
-      (isConnected && chainId == ethChainId)
+      (isConnected && chainId == ethChainId) ||
+      (isConnected && chainId == polygonChainId)
     ) {
       getAllPrice();
       getBalance();
@@ -892,14 +1048,80 @@ export const Home = () => {
       e.preventDefault();
     }
   };
+  const handleOnChanges = (value, country) => {
+    setMobile_number(value);
+
+    let adjustedMobile = value.startsWith(country.dialCode)
+      ? value.replace(country.dialCode, "")
+      : value;
+
+    if (!adjustedMobile) {
+      setMobile_numberErr("Mobile Number is required");
+    } else {
+      setMobile_numberErr("");
+    }
+    setNumber(adjustedMobile);
+    setCountry_code("+" + country.dialCode);
+  };
+  const registerHandler = async () => {
+    if (!name) {
+      setNameErr("Name is required");
+      return;
+    }
+    if (!email) {
+      setEmailErr("This field is required");
+      return;
+    }
+    if (!Emailpattern.test(email)) {
+      setEmailErr("Please enter valid email");
+      return;
+    }
+    if (!number) {
+      setMobile_numberErr("This field is required");
+      return;
+    }
+
+    // const address = localStorage.getItem("address");
+    // if (!address) {
+    //   return toast.error("Please connect with metamusk");
+    // }
+
+    let data = {
+      name,
+      email,
+      mobile_number: number,
+      country_code,
+    };
+
+    const result = await registerUser(data);
+    if (result.status) {
+      let token = result.token;
+      localStorage.setItem("jwtToken", token);
+
+      setTimeout(() => {
+        navigate("/#buy-now", { replace: true });
+        setTimeout(() => {
+          window.scrollTo(0, window.scrollY);
+        }, 100);
+      }, 2000);
+
+      toast.success(result.message);
+      setName("");
+      setCountry_code(" ");
+      setEmail("");
+      setMobile_number("");
+    } else {
+      toast.error(result.message);
+    }
+  };
 
   const homeRef = useRef(null);
   const tokenomicsRef = useRef(null);
   const faqRef = useRef(null);
-  const roadmapRef = useRef(null) ;
-  const aboutUsRef = useRef(null) ;
-  const buynowRef = useRef(null) ;
-  const location = useLocation() ;
+  const roadmapRef = useRef(null);
+  const aboutUsRef = useRef(null);
+  const buynowRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     if (location.hash || homeRef.current) {
@@ -921,6 +1143,12 @@ export const Home = () => {
       }
     }
   }, [location.hash]);
+
+  useEffect(() => {
+    if (!location.hash) {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
 
   const scrollToHome = () => {
     if (homeRef.current) {
@@ -999,6 +1227,101 @@ export const Home = () => {
     ],
   };
 
+  //============== for chain changes ==============//
+  const handleChange = (e) => {
+    const err = "This field is required";
+    const { name, value } = e.target;
+    if (name === "name") {
+      setName(value);
+      if (value === "") {
+        setNameErr("Name is required");
+      } else {
+        setNameErr("");
+      }
+    }
+    if (name == "email") {
+      setEmail(value);
+
+      if (value == "") {
+        setEmailErr(err);
+      } else {
+        if (!Emailpattern.test(value)) {
+          setEmailErr("Please enter valid email");
+        } else {
+          setEmailErr("");
+        }
+      }
+    }
+    if (name == "mobile_number") {
+      setMobile_number(value);
+
+      if (value === "") {
+        setMobile_numberErr("Mobile Number is required");
+      } else {
+        setMobile_numberErr("");
+      }
+    }
+  };
+  const chainImages = [
+    "img/bnb-white.png",
+    "img/eth-white.png",
+    "img/polygon-white.png",
+    "img/arbitrum-white.png",
+    "img/avalanche-white.png",
+    // "img/optimism-white.png",
+    // "img/fantom-white.png",
+  ];
+
+  const handleSelectChain = (index) => {
+    setSelectedChain(index);
+  };
+  const chainButtons = [
+    { index: "0", imgSrc: "img/bnb-white.png", alt: "bnb" },
+    { index: "1", imgSrc: "img/eth-white.png", alt: "usdt" },
+    { index: "2", imgSrc: "img/polygon-white.png", alt: "polygon" },
+    { index: "3", imgSrc: "img/arbitrum-white.png", alt: "arbitrum" },
+    { index: "4", imgSrc: "img/avalanche-white.png", alt: "avalanche" },
+    // { index: "5", imgSrc: "img/optimism-white.png", alt: "optimism" },
+    // { index: "6", imgSrc: "img/fantom-white.png", alt: "fantom" },
+  ];
+
+  const chainOptions = [
+    [
+      // Chain 0
+      <option value="0">BNB</option>,
+      <option value="1">WBTC (BEP20)</option>,
+      <option value="2">WETH (BEP20)</option>,
+      <option value="3">USDT (BEP20)</option>,
+      <option value="4">USDC (BEP20)</option>,
+    ],
+    [
+      // Chain 1
+      <option value="0">ETH</option>,
+      <option value="1">WBTC (ERC20)</option>,
+      <option value="2">USDT (ERC20)</option>,
+      <option value="3">USDC (ERC20)</option>,
+    ],
+    [
+      // Chain 2
+      <option value="0">MATIC</option>,
+      <option value="1">USDT (polygon)</option>,
+      <option value="2">USDC (polygon)</option>,
+    ],
+    [
+      // Chain 3
+      <option value="0">ARB</option>,
+      <option value="1">USDT (ARB)</option>,
+      <option value="2">USDC (ARB)</option>,
+    ],
+    [
+      // Chain 4
+      <option value="0">AVAX</option>,
+      <option value="1">USDT (AVAX)</option>,
+      <option value="2">USDC (AVAX)</option>,
+    ],
+  ];
+
+  //============== for chain changes ==============//
   return (
     <>
       <div>
@@ -1054,7 +1377,6 @@ export const Home = () => {
                 />
               </div>
             </Slider>
-           
           </section>
           <section className="bg2 ">
             <section
@@ -1135,8 +1457,11 @@ export const Home = () => {
                             className="progress-bar"
                             style={{
                               width: totalSupply
-                                ? parseInt((totalToken * 100) / 40000000)
-                                : 0,
+                                ? `${
+                                    parseInt((totalToken * 100) / 40000000) %
+                                    100
+                                  }%`
+                                : "0%",
                             }}
                           >
                             <span className="pp">
@@ -1149,23 +1474,16 @@ export const Home = () => {
                           </div>
                         </div>
 
-                        <div className="tab_btn row mb-3">
-                          <div className="col-6">
+                        <div className="tab_btn d-flex mb-3">
+                          {chainButtons.map(({ index, imgSrc, alt }) => (
                             <button
-                              onClick={() => selectChain("0")}
-                              className={selectChains == "0" ? "active" : ""}
+                              key={index}
+                              onClick={() => selectChain(index)}
+                              className={selectChains === index ? "active" : ""}
                             >
-                              <img src="img/bnb-white.png" alt="bnb " />
+                              <img src={imgSrc} alt={alt} />
                             </button>
-                          </div>
-                          <div className="col-6">
-                            <button
-                              onClick={() => selectChain("1")}
-                              className={selectChains == "1" ? "active" : ""}
-                            >
-                              <img src="img/eth-white.png" alt="usdt" />
-                            </button>
-                          </div>
+                          ))}
                         </div>
                         <div className="form-group ex_input_box position-relative">
                           <input
@@ -1179,19 +1497,13 @@ export const Home = () => {
                             id="busdAmtIdo"
                             className="input_item"
                           />
-                          {selectChains == 0 ? (
-                            <img
-                              src="img/bnb-white.png"
-                              alt="bnb "
-                              className="in_icon position-absolute"
-                            />
-                          ) : (
-                            <img
-                              src="img/eth-white.png"
-                              alt="eth"
-                              className="in_icon position-absolute"
-                            />
-                          )}
+
+                          <img
+                            src={chainImages[selectChains]}
+                            alt="Chain Logo"
+                            className="in_icon position-absolute"
+                            onClick={() => handleSelectChain(selectChains)}
+                          />
                           <select
                             class=" select_dark"
                             onChange={(e) => selectCurrency(e)}
@@ -1208,14 +1520,32 @@ export const Home = () => {
                                 <option value="3">USDT (BEP20)</option>
                                 <option value="4">USDC (BEP20)</option>
                               </>
-                            ) : (
+                            ) : selectChains == 1 ? (
                               <>
                                 <option value="0">ETH</option>
                                 <option value="1">WBTC (ERC20)</option>
                                 <option value="2">USDT (ERC20)</option>
                                 <option value="3">USDC (ERC20)</option>
                               </>
-                            )}
+                            ) : selectChains == 2 ? (
+                              <>
+                                <option value="0">MATIC</option>
+                                <option value="1">USDT (polygon)</option>
+                                <option value="2">USDC (polygon)</option>
+                              </>
+                            ) : selectChains == 3 ? (
+                              <>
+                                <option value="0">ARB</option>
+                                <option value="1">USDT (ARB)</option>
+                                <option value="2">USDC (ARB)</option>
+                              </>
+                            ) : selectChains == 4 ? (
+                              <>
+                                <option value="0">AVAX</option>
+                                <option value="1">USDT (AVAX)</option>
+                                <option value="2">USDC (AVAX)</option>
+                              </>
+                            ) : null}
                           </select>
                         </div>
 
@@ -1559,17 +1889,75 @@ export const Home = () => {
                     alt="binance-logo.png"
                   />
                 </div>
-                {/* <img src="img/at0.png" alt="Available logo" />
-                  <img src="img/at1.png" alt="Available logo" />
-                  <img src="img/at2.png" alt="Available logo" />
-                  <img src="img/at3.png" alt="Available logo" />
-                  <img src="img/at4.png" alt="Available logo" />
-                  <img src="img/at5.png" alt="Available logo" />
-                  <img src="img/at6.png" alt="Available logo" />
-                  <img src="img/at7.png" alt="Available logo" />
-                  <img src="img/at8.png" alt="Available logo" /> */}
               </Slider>
               {/* </marquee> */}
+            </section>
+            {/* <RegisterUser /> */}
+            <section className="ex_box p70">
+              <div className="container  position-relative">
+                <div className="ex_box_in position-relative box pl-lg-5 pr-lg-5">
+                  <div className="row align-items-center">
+                    <div className="col-md-4  m-auto">
+                      <img
+                        src="img/token.png"
+                        alt="token "
+                        className="img-fluid token_logo"
+                      />
+                    </div>
+                    <div className="col-md-6 col-lg-5  ">
+                      <div className="text-center lh70 mb-4">
+                        <h6 className="h1 mb-0">Signup Now </h6>
+                        <h6 className="t_gr h1"> for Exclusive Offers</h6>
+                      </div>
+                      <div className="form-group ex_input_box position-relative">
+                        <input
+                          type="text"
+                          name="name"
+                          placeholder="Enter  User Name"
+                          class="input_item"
+                          value={name}
+                          onChange={handleChange}
+                        />
+                        <span className="text-danger">{nameErr}</span>
+                      </div>
+                      <div className="form-group ex_input_box position-relative">
+                        <input
+                          type="text"
+                          name="email"
+                          placeholder="Enter  Email"
+                          class="input_item"
+                          value={email}
+                          onChange={handleChange}
+                        />
+                        <span className="text-danger">{emailErr}</span>
+                      </div>
+                      <div className="form-group ex_input_box position-relative">
+                        <PhoneInput
+                          key={"phoneInput"}
+                          country="IND"
+                          value={mobile_number}
+                          onChange={handleOnChanges}
+                          className="input_item"
+                          placeholder="Email/Mobile"
+                          countryCodeEditable={false}
+                          enableSearch={true}
+                          inputProps={{
+                            autoFocus: true,
+                            name: "mobile_number",
+                          }}
+                          // disabled={disableGetCode}
+                        />
+                        <span className="text-danger">{mobile_numberErr}</span>
+                      </div>
+                      <div className>
+                        <button className="btn w100" onClick={registerHandler}>
+                          Sign Up
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </section>
             <section
               className="faq p70 text-center"
@@ -1949,59 +2337,6 @@ export const Home = () => {
                 </div>
               </div>
             </section>
-            {/* <section className="ex_box p70">
-              <div className="container  position-relative">
-                <div className="ex_box_in position-relative box pl-lg-5 pr-lg-5">
-                  <div className="row align-items-center">
-                    <div className="col-md-4  m-auto">
-                      <img
-                        src="img/token.png"
-                        alt="token "
-                        className="img-fluid token_logo"
-                      />
-                    </div>
-                    <div className="col-md-6 col-lg-5  ">
-                      <div className="text-center lh70 mb-4">
-                        <h6 className="h1 mb-0">Sign Up and </h6>
-                        <h6 className="t_gr h1">
-                          {" "}
-                          Claim Your Free <span className="ffa">$</span>GWIZ
-                        </h6>
-                      </div>
-                      <div className="form-group ex_input_box position-relative">
-                        <input
-                          type="text"
-                          placeholder="Enter Your Name"
-                          className="input_item"
-                        />
-                      </div>
-                      <div className="form-group ex_input_box position-relative">
-                        <input
-                          type="text"
-                          placeholder="Enter Your Email"
-                          className="input_item"
-                        />
-                      </div>
-                      <div className="form-group ex_input_box position-relative">
-                        <input
-                          type="text"
-                          placeholder="+234  800  2738  9700"
-                          className="input_item pl-5"
-                        />
-                        <img
-                          src="img/japan.png"
-                          alt="token "
-                          style={{ position: "absolute", left: 18, top: 12 }}
-                        />
-                      </div>
-                      <div className>
-                        <button className="btn w100">Sign Up</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section> */}
           </section>
 
           <Footer

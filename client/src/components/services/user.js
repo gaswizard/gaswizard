@@ -1,21 +1,10 @@
 import * as opsService from "./Ops";
 
-import { getProfileApi, updateProfileApi,generateKeyApi } from "../Constant/Api";
+import { registerApi } from "../Constant/Api";
 
-const getProfile = async (data, token) => {
-  let result = await opsService.getData(getProfileApi, data, token);
-
-  return result;
-};
-const updateProfile = async (data, token) => {
-  let result = await opsService.postdata(updateProfileApi, data, token);
-
-  return result;
-};
-const generateKey = async (data, token) => {
-  let result = await opsService.getData(generateKeyApi, data, token);
-
+const registerUser = async (data) => {
+  let result = await opsService.postdata(registerApi, data);
   return result;
 };
 
-export { getProfile, updateProfile,generateKey };
+export { registerUser };

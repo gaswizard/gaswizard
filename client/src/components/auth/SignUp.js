@@ -6,19 +6,19 @@ import { toast } from "react-toastify";
 import { Emailpattern } from "../pattern/Pattern";
 import { useAuth } from "../../AuthContext";
 import { useNavigate } from "react-router-dom";
-
+import "react-phone-input-2/lib/style.css";
+import PhoneInput from "react-phone-input-2";
 export const SignUp = () => {
   const [name, setName] = useState("");
-  const [mobile_number, setMobile_number] = useState("");
+  const [mobile_number, setMobile_number] = useState("+91");
+  const [number, setNumber] = useState("");
   const [email, setEmail] = useState("");
 
   const [mobile_numberErr, setMobile_numberErr] = useState("");
   const [emailErr, setEmailErr] = useState("");
   const [nameErr, setNameErr] = useState("");
-
+  const [country_code, setCountry_code] = useState();
   const { login } = useAuth();
-
-
 
   const checkOtpHandler = async () => {
     if (!name) {
@@ -33,17 +33,21 @@ export const SignUp = () => {
       setEmailErr("Please enter valid email");
       return;
     }
-    if (!mobile_number) {
+    if (!number) {
       setMobile_numberErr("This field is required");
       return;
     }
 
     const address = localStorage.getItem("address");
+    if (!address) {
+      return toast.error("Please connect with metamusk");
+    }
 
     let data = {
       name,
       email,
-      mobile_number,
+      mobile_number: number,
+      country_code,
       address,
     };
 
@@ -101,6 +105,22 @@ export const SignUp = () => {
     }
   };
 
+  const handleOnChanges = (value, country) => {
+    setMobile_number(value);
+
+    let adjustedMobile = value.startsWith(country.dialCode)
+      ? value.replace(country.dialCode, "")
+      : value;
+
+    if (!adjustedMobile) {
+      setMobile_numberErr("Mobile Number is required");
+    } else {
+      setMobile_numberErr("");
+    }
+    setNumber(adjustedMobile);
+    setCountry_code("+" + country.dialCode);
+  };
+
   const validNumber = (e) => {
     if (!/[\d.]/.test(e.key)) {
       e.preventDefault();
@@ -155,14 +175,20 @@ export const SignUp = () => {
                     {" "}
                     <label className="mb-1">Mobile Number</label>
                     <div class="form-group  position-relative">
-                      <input
-                       
-                        name="mobile_number"
-                        placeholder="Enter Number"
-                        class="input_item"
-                        onKeyPress={validNumber}
+                      <PhoneInput
+                        key={"phoneInput"}
+                        country="IND"
                         value={mobile_number}
-                        onChange={handleChange}
+                        onChange={handleOnChanges}
+                        className="input_item"
+                        placeholder="Email/Mobile"
+                        countryCodeEditable={false}
+                        enableSearch={true}
+                        inputProps={{
+                          autoFocus: true,
+                          name: "mobile_number",
+                        }}
+                        // disabled={disableGetCode}
                       />
                       <span className="text-danger">{mobile_numberErr}</span>
                     </div>

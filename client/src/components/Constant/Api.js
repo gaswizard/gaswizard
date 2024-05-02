@@ -11,6 +11,7 @@ export const metaRequestInsertApi = baseUrl+"/trx-apply"
 export const checkUserApi = baseUrl+"/check-user"
 export const getTotalUsdtApi = baseUrl+"/get-total-usdt"
 export const signupUserApi = baseUrl+"/sign-up-user"
+export const registerApi = baseUrl+"/register-user"
 
 
 

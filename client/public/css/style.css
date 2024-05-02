@@ -83,7 +83,7 @@ button:active {
     outline: none;
 }
 
- .progress {
+ .progress {position: relative;
        display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -93,7 +93,10 @@ button:active {
     background-color: rgb(64 125 255 / 40%);
     border-radius: 20px;
 }
-
+.progress .pp{    position: absolute;
+    width: 100%;
+    left: 0;
+    top: 2px;}
 /*------------ PRELOADER --------*/
 
 /*------ Scroll to Top------- */
@@ -546,6 +549,23 @@ a.color1:hover{ color: #4062FF; text-decoration: underline;}
     .pt170{    padding-top: 170px;}
 .faq .card-body { padding: 0.5rem;}
 .btn_border2{     background: transparent;
+    }
+
+.react-tel-input .country-list .country {
+        font-size: 14px;
+        color: #000;
+    }    
+    .react-tel-input .form-control {
+        border: 0!important;    height: auto!important;    padding: 1px 0 1px 48px!important
+    }
+    .react-tel-input .flag-dropdown {
+       
+        border: 0!important;
+        border-right: 1px solid #cacaca!important;
+         
+    }
+    .react-tel-input .selected-flag:hover, .react-tel-input .selected-flag:focus {
+        background-color: transparent!important;
     }
     
 @media (min-width:991px) {

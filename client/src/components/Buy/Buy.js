@@ -20,20 +20,20 @@ import {
   parseEther,
 } from "ethers";
 
-import $ from "jquery" ;
+import $ from "jquery";
 
-import { Footer } from "../widgets/Footer" ;
+import { Footer } from "../widgets/Footer";
 import { getTransaction } from "../services/transaction";
 export const Buy = () => {
   const projectId = "000a1b24652483ad57b194801f5591ac";
   const { address, chainId, isConnected } = useWeb3ModalAccount() ;
   const { walletProvider } = useWeb3ModalProvider();
 
-  const [record, setRecord] = useState([]) ;
+  const [record, setRecord] = useState([]);
 
   const [totalUsdt, setTotalUsdt] = useState();
-  const [totalToken, setTotalToken] = useState() ;
-  const [currentPage, setCurrentPage] = useState(1) ;
+  const [totalToken, setTotalToken] = useState();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const mainnet = [
     {
